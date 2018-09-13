@@ -8,7 +8,7 @@
   <body>
     <script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
     <script src="http://code.jquery.com/mobile/1.4.3/jquery.mobile-1.4.3.min.js"></script>
-    <script src="control/login.js"></script>
+    <script src="control/main.js"></script>
     <script src="control/create.js"></script>
     <script src="control/reset.js"></script>
     <script src="control/session.js"></script>
@@ -18,14 +18,15 @@
       });
       $(document).ready(function() {
         $(document).on( "pagecontainerload", function(event, ui) {
-          console.log("navigating to page_login...");
-          $.mobile.pageContainer.pagecontainer("change", "#page_login");
+          console.log("navigating to page_main...");
+          $.mobile.pageContainer.pagecontainer("change", "#page_main");
           console.log("navigating done!");
         } );
         console.log("loading pagecontainers...");
-        $.mobile.pageContainer.pagecontainer("load", "view/login.html");
+        $.mobile.pageContainer.pagecontainer("load", "view/main.html");
         $.mobile.pageContainer.pagecontainer("load", "view/create.html");
-        $.mobile.pageContainer.pagecontainer("load", "view/reset.html");
+        $.mobile.pageContainer.pagecontainer("load", "view/reset_phase_1.html");
+        $.mobile.pageContainer.pagecontainer("load", "view/reset_phase_2.html");
         $.mobile.pageContainer.pagecontainer("load", "view/session_main.html");
         $.mobile.pageContainer.pagecontainer("load", "view/session_account_edit.html");
         console.log("pagecontainer-load done!");

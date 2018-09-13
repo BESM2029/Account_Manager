@@ -1,0 +1,13 @@
+<div data-role="page" id="page_reset_phase_1" data-dom-cache="true" >
+  <form>
+  <label for="basic">Login ID:</label>
+  <input type="email" placeholder="sophie@example.com" id="reset_id">
+  <input type="button" onclick="sendResetCode()" value="Send Reset Code">
+  <label for="basic">Reset Code:</label>
+  <input type="text" id="reset_code">
+  <input type="button" onclick="checkResetCode()" value="Check Reset Code">
+  <a href="#page_main">Go to Phase 2(temporarily)</a><br>
+  <a href="#page_main">Go to Login</a>
+  <div class="notice"></div>
+  </form>
+</div> <!--/page_reset_phase_1-->

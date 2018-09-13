@@ -1,5 +1,6 @@
 function createAccount() {
-  var params = {identity: $('#creat_id').val(), password1: $('#create_pw1').val(), password2: $('#create_pw2').val(), firstName: $('#create_first_name').val(), lastName: $('#create_last_name').val()};
+  var params = {identity: $('#creat_id').val(), password1: $('#create_pw1').val(), password2: $('#create_pw2').val(),
+    firstName: $('#create_first_name').val(), lastName: $('#create_last_name').val()/*, recovery_email: $('#create_recovery_email').val()*/};
   console.log("client params = "+JSON.stringify(params));
   $.ajax({
     'async': true,

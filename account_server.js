@@ -14,6 +14,9 @@ var transporter = nodemailer.createTransport({
 });
 
 var session_account = {ID: null, firstName: null, lastName: null, index: null};
+var reset_account = null;
+var reset_code = null;
+var reset_code_success = 0;
 
 function find_index(data_arr, identity){
 	let found_index = -1;
@@ -66,7 +69,8 @@ app.post('/create_account', function (req, res) {
 	let password2 = (req.body.password2)?req.body.password2: 'password2_error';
 	let firstName = (req.body.firstName)?req.body.firstName: 'firstName_error';
 	let lastName = (req.body.lastName)?req.body.lastName: 'lastName_error';
-	let personal = {ID: identity, PW: password1, FirstName: firstName, LastName: lastName};
+	//let recoveryEmail = (req.body.recoveryEmail)?req.body.recoveryEmail: 'lastName_error';
+	let personal = {ID: identity, PW: password1, FirstName: firstName, LastName: lastName/*, recoveryEmail: recoveryEmail*/};
 	let params = {msg: "", success: 0, session_account: session_account};
 	fs.readFile('data.txt', 'utf8', function(err, data) {
 		let data_arr = JSON.parse(data);
@@ -137,7 +141,7 @@ app.post('/logout_account', function (req, res) {
 	res.end(msg);
 });
 
-app.post('/reset_password', function (req, res) {
+app.post('/send_reset_code', function (req, res) {
     console.log('req = '+JSON.stringify(req.body));
 	let identity = (req.body.identity)?req.body.identity: 'identity_error';
 	let msg = '';
@@ -153,36 +157,38 @@ app.post('/reset_password', function (req, res) {
 		else { // account exists
 			let account = data_arr[account_index];
 			let rnd_str = "";
+			reset_account = account.ID;
 			for ( let ii = 0; ii<5; ii++ ){
 				rnd_str += Math.floor(Math.random() * 10);
 			}
-			account.PW = rnd_str;
+			reset_code = rnd_str;
 			var data_str = JSON.stringify(data_arr);
 			console.log('stack = '+data_str);
 			fs.writeFile('Data.txt', data_str, function (err) {
 				if (err) {
-					msg = 'Changing password failed.'; // throw err;
+					msg = 'Send reset code failed.'; // throw err;
 					console.log(msg);
 					res.writeHead(200, {'Content-Type': 'text/plain'});
 					res.end(msg);
 				}
 				else {
 					var mailOptions = {
-						from: 'testless08@gmail.com',
+						from: 'copper.iron.29@gmail.com',
 						to: identity,
-						subject: "Resetting password for HWANG'S has been completed.",
-						text: "Resetting password for HWANG'S has been completed.\nNew password is '"+rnd_str+"'."
+						subject: "어버버버버버버.",
+						text: "에베베베베베베베 '"+rnd_str+"'."
 					};
 					transporter.sendMail(mailOptions, function(error, info){
 						if (error) {
 							console.log(error);
-							msg = 'Sending new password to '+identity+" FAILED. Please check "+identity+" is valid.";
+							msg = 'Sending reset code to '+identity+" FAILED. Please check "+identity+" is valid.";
 							console.log(msg);
 							res.writeHead(200, {'Content-Type': 'text/plain'});
 							res.end(msg);
-						} else {
+						}
+						else {
 							console.log('Email sent: ' + info.response);
-							msg = 'New password has been sent to '+identity+". Please check it out.";
+							msg = 'Reset code has been sent to '+identity+". Please check it out.";
 							console.log(msg);
 							res.writeHead(200, {'Content-Type': 'text/plain'});
 							res.end(msg);
@@ -190,6 +196,78 @@ app.post('/reset_password', function (req, res) {
 					});
 				}
 			});
+		}
+	});
+});
+
+app.post('/check_reset_code', function (req, res) {
+    console.log('req = '+JSON.stringify(req.body));
+	let type_code = (req.body.code)?req.body.code: 'code_error';
+	let params = {msg: "", success: 0};
+	if (type_code == reset_code) {
+		reset_code_success = 1;
+		params.success = 1;
+		params.msg = "Reset code is correct."
+		let params_str = JSON.stringify(params);
+		console.log(params_str);
+		reset_code = null;
+		res.writeHead(200, {'Content-Type': 'text/plain'});
+		res.end(params_str);
+	}
+	else {
+		params.msg = "Error. Reset code is incorrect."
+		let params_str = JSON.stringify(params);
+		console.log(params_str);
+		res.writeHead(200, {'Content-Type': 'text/plain'});
+		res.end(params_str);
+	}
+});
+
+app.post('/change_password', function (req, res) {
+  console.log("req = "+JSON.stringify(req.body));
+	let password1 = (req.body.password1)?req.body.password1: 'password1_error';
+	let password2 = (req.body.password2)?req.body.password2: 'password2_error';
+	let params = {msg: "", success: 0, session_account: session_account};
+	fs.readFile('Data.txt', 'utf8', function(err, data) {
+		let data_arr = JSON.parse(data);
+		let account_index = find_index(data_arr, reset_account);
+		if (account_index < 0 && reset_code_success != 1) { // account doesn't exist
+			params.msg = reset_account+' does not exist.'; // throw err;
+			let params_str = JSON.stringify(params);
+			console.log(params_str);
+			res.writeHead(200, {'Content-Type': 'text/plain'});
+			res.end(params_str);
+		}
+		else {
+			let this_account = data_arr[account_index]
+			if (password1 == password2) {
+				this_account.PW = password1;
+				var data_str = JSON.stringify(data_arr);
+				fs.writeFile('Data.txt', data_str, function (err) {
+					if (err) {
+						params.msg = "Password changing failed."; // throw err;
+						let params_str = JSON.stringify(params);
+						console.log(params_str);
+						res.writeHead(200, {'Content-Type': 'text/plain'});
+						res.end(params_str);
+					}
+					else {
+						params.msg = "Password is changed Successfully";
+						let params_str = JSON.stringify(params);
+						console.log(params_str);
+						reset_account = null;
+						res.writeHead(200, {'Content-Type': 'text/plain'});
+						res.end(params_str);
+					}
+				});
+			}
+			else {
+				params.msg = "The two passwords are different.";
+				let params_str = JSON.stringify(params);
+				console.log(params_str);
+				res.writeHead(200, {'Content-Type': 'text/plain'});
+				res.end(params_str);
+			}
 		}
 	});
 });
