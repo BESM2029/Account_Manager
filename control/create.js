@@ -14,8 +14,8 @@ function createAccount() {
       $('.notice').html(params_arr.msg);
     },
    'error': function (data) {
-      console.log(params_arr.msg);
-      $(".notice").html(data.msg);
+      let params_arr = JSON.parse(data)
+      $(".notice").html(params_arr.msg);
     }
   });
 }
