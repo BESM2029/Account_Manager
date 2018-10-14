@@ -5,19 +5,19 @@ function getAccountInfo() {
     "global":false,
     "dataType":"html",
     "url": "get_account_info",
-    "success": function (params_str) {
-      let data = JSON.parse(params_str);
-      if (data.msg)
-        $(".notice").html(data.msg);
-      if (data.session_account && data.session_account.ID && data.session_account.firstName && data.session_account.lastName) {
-        $(".Login_ID").html(data.session_account.ID);
-        $(".Login_fn").html(data.session_account.firstName);
-        $(".Login_ln").html(data.session_account.lastName);
+    "success": function (data) {
+      let parms = JSON.parse(data);
+      if (parms.msg)
+        $(".notice").html(parms.msg);
+      if (parms.sessionAccount && parms.sessionAccount.identity && parms.sessionAccount.firstName && parms.sessionAccount.lastName) {
+        $(".Login_ID").html(parms.sessionAccount.identity);
+        $(".Login_fn").html(parms.sessionAccount.firstName);
+        $(".Login_ln").html(parms.sessionAccount.lastName);
       }
     },
     "error": function (data) {
-      console.log(data);
-      $(".notice").html(data);
+      let parms = JSON.parse(data);
+      $(".notice").html(parms.msg);
     }
   });
 }
@@ -30,11 +30,12 @@ function logout() {
     "url":"logout_account",
     "success":function (data) {
       window.open("Index.html", "_self", true);
-      $(".notice").html(data);
+      let parms = JSON.parse(data);
+      $(".notice").html(parms.msg);
     },
     "error":function (data) {
-      console.log(data);
-      $(".notice").html(data);
+      let parms = JSON.parse(data);
+      $(".notice").html(parms.msg);
     }
   });
 }
@@ -48,16 +49,14 @@ function changeAccountInfo() {
     'dataType': 'html',
     'url': 'change_account_info',
     'data': params,
-    'success': function (params_str) {
-      console.log("success callback is called.");
-      let data = JSON.parse(params_str);
+    'success': function (data) {
+      let params = JSON.parse(data);
       if (data.msg)
-        $(".notice").html(data.msg);
+        $(".notice").html(params.msg);
     },
     'error': function (data) {
-      console.log(data);
-      $(".notice").html(data);
+      let params = JSON.parse(data);
+      $(".notice").html(params.msg);
     }
   });
-  console.log("ajax is passed.");
 }

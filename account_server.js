@@ -13,7 +13,7 @@ var transporter = nodemailer.createTransport({
 	}
 });
 
-var session_account = {ID: null, firstName: null, lastName: null, index: null};
+var sessionAccount = {ID: null, firstName: null, lastName: null, index: null};
 var reset_account = null;
 var reset_code = null;
 var reset_code_success = 0;
@@ -34,7 +34,7 @@ app.post('/login_account', function (req, res) {
     console.log("req = "+JSON.stringify(req.body));
 	let identity = (req.body.identity)?req.body.identity:'identity_error';
 	let password = (req.body.password)?req.body.password:'password_error';
-	let params = {msg: "", success: 0, session_account: session_account};
+	let params = {msg: "", success: 0, sessionAccount: sessionAccount};
 	fs.readFile('data.txt', 'utf8', function(err, data) {
 		let data_arr = JSON.parse(data);
 		let account_index = find_index(data_arr, identity);
@@ -44,10 +44,10 @@ app.post('/login_account', function (req, res) {
 		else {
 			let account_info = data_arr[account_index];
 			if (account_info.PW == password) {
-				session_account.ID = account_info.ID;
-				session_account.firstName = account_info.FirstName;
-				session_account.lastName = account_info.LastName;
-				session_account.index = account_index;
+				sessionAccount.ID = account_info.ID;
+				sessionAccount.firstName = account_info.FirstName;
+				sessionAccount.lastName = account_info.LastName;
+				sessionAccount.index = account_index;
 				params.success = 1;
 				params.msg = identity + " login successfully.";
 			}
@@ -71,7 +71,7 @@ app.post('/create_account', function (req, res) {
 	let lastName = (req.body.lastName)?req.body.lastName: 'lastName_error';
 	//let recoveryEmail = (req.body.recoveryEmail)?req.body.recoveryEmail: 'lastName_error';
 	let personal = {ID: identity, PW: password1, FirstName: firstName, LastName: lastName/*, recoveryEmail: recoveryEmail*/};
-	let params = {msg: "", success: 0, session_account: session_account};
+	let params = {msg: "", success: 0, sessionAccount: sessionAccount};
 	fs.readFile('data.txt', 'utf8', function(err, data) {
 		let data_arr = JSON.parse(data);
 		let account_index = find_index(data_arr, identity);
@@ -116,9 +116,9 @@ app.post('/create_account', function (req, res) {
 });
 
 app.post('/get_account_info', function (req, res) {
-	let params = {msg: "", success: 1, session_account: session_account};
-	if (session_account && session_account.ID) {
-		params.msg = 'account ID is '+session_account.ID;
+	let params = {msg: "", success: 1, sessionAccount: sessionAccount};
+	if (sessionAccount && sessionAccount.ID) {
+		params.msg = 'account ID is '+sessionAccount.ID;
 	}
 	else {
 		params.msg = "Login account doesn't exist. Login first!";
@@ -131,11 +131,11 @@ app.post('/get_account_info', function (req, res) {
 
 app.post('/logout_account', function (req, res) {
 	let msg = 'logout successfully.';
-	//session_account.account = null;
-	session_account.ID = null;
-	session_account.firstName = null;
-	session_account.lastName = null;
-	session_account.index = null;
+	//sessionAccount.account = null;
+	sessionAccount.ID = null;
+	sessionAccount.firstName = null;
+	sessionAccount.lastName = null;
+	sessionAccount.index = null;
 	console.log(msg);
 	res.writeHead(200, {'Content-Type': 'text/plain'});
 	res.end(msg);
@@ -227,7 +227,7 @@ app.post('/change_password', function (req, res) {
   console.log("req = "+JSON.stringify(req.body));
 	let password1 = (req.body.password1)?req.body.password1: 'password1_error';
 	let password2 = (req.body.password2)?req.body.password2: 'password2_error';
-	let params = {msg: "", success: 0, session_account: session_account};
+	let params = {msg: "", success: 0, sessionAccount: sessionAccount};
 	fs.readFile('Data.txt', 'utf8', function(err, data) {
 		let data_arr = JSON.parse(data);
 		let account_index = find_index(data_arr, reset_account);
@@ -278,11 +278,11 @@ app.post('/change_account_info', function (req, res) {
 	let password2 = (req.body.password2)?req.body.password2: 'password2_error';
 	let firstName = (req.body.firstName)?req.body.firstName: 'firstName_error';
 	let lastName = (req.body.lastName)?req.body.lastName: 'lastName_error';
-	let params = {msg: "", success: 0, session_account: session_account};
+	let params = {msg: "", success: 0, sessionAccount: sessionAccount};
 	fs.readFile('Data.txt', 'utf8', function(err, data) {
 		if (password1 == password2) {
 			let data_arr = JSON.parse(data);
-			let this_account = data_arr[session_account.index]
+			let this_account = data_arr[sessionAccount.index]
 			this_account.PW = password1;
 			this_account.FirstName = firstName;
 			this_account.LastName = lastName;

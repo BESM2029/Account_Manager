@@ -1,6 +1,6 @@
 function createAccount() {
   var params = {identity: $('#creat_id').val(), password1: $('#create_pw1').val(), password2: $('#create_pw2').val(),
-    firstName: $('#create_first_name').val(), lastName: $('#create_last_name').val()/*, recovery_email: $('#create_recovery_email').val()*/};
+    firstName: $('#create_first_name').val(), lastName: $('#create_last_name').val()};
   console.log("client params = "+JSON.stringify(params));
   $.ajax({
     'async': true,
@@ -10,12 +10,12 @@ function createAccount() {
     'url': 'create_account',
     'data': params,
     'success': function (data) {
-      let params_arr = JSON.parse(data)
-      $('.notice').html(params_arr.msg);
+      let params = JSON.parse(data)
+      $('.notice').html(params.msg);
     },
    'error': function (data) {
-      let params_arr = JSON.parse(data)
-      $(".notice").html(params_arr.msg);
+      let params = JSON.parse(data)
+      $('.notice').html(params.msg);
     }
   });
 }
