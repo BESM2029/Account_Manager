@@ -16,18 +16,53 @@ var transporter = nodemailer.createTransport({
   }
 });
 
-var sessionAccount = {identity:null, firstName:null, lastName:null, index:null};
+var sessionAccount = {identity:null, firstName:null, lastName:null};
 var resetIdentity = null;
 var resetCode = null;
 var resetSuccess = 0;
 
-app.post("/login_account", function (req, res) {
-  console.log("server req = "+JSON.stringify(req.body));
-  let identity = (req.body.identity)?req.body.identity:"identity error";
-  let password = (req.body.password)?req.body.password:"password error";
+app.post("/login_account", async (req, res) => {
   let params = {msg:"", success:0};
   let params_str = "";
-  MongoClient.connect(url, {useNewUrlParser:true}, function(err, db) {
+  try {
+    console.log("server req = "+JSON.stringify(req.body));
+    let identity = (req.body.identity)?req.body.identity:"identity error";
+    let password = (req.body.password)?req.body.password:"password error";
+    let client = await MongoClient.connect(url, {useNewUrlParser:true});
+    let dbo = client.db("account_server_db");
+    let query = {identity:identity};
+    let result = await dbo.collection("members").findOne(query);
+    client.close();
+    if (!result) {
+      params.msg = identity+" doesn't exist.";
+    }
+    else {
+      if (result.password == password) {
+        sessionAccount.identity = result.identity;
+        sessionAccount.firstName = result.firstName;
+        sessionAccount.lastName = result.lastName;
+        params.success = 1;
+        params.msg = identity+" login successfully..";
+      }
+      else {
+        params.msg = identity+"'s password is different.";
+      }
+    }
+  }
+  catch (err) {
+    console.log(err.message);
+  }
+  finally {
+    params_str = JSON.stringify(params);
+    console.log("server res = "+params_str);
+    res.writeHead(200, {"Content-Type":"text/plain"});
+    res.end(params_str);
+  }
+});
+
+
+
+/*  function(err, db) {
     if (err) throw err;
     let dbo = db.db("account_server_db");
     let query = {identity:identity};
@@ -67,6 +102,7 @@ app.post("/login_account", function (req, res) {
     });
   });
 });
+*/
 
 app.post("/create_account", function (req, res) {
   console.log("server req = "+JSON.stringify(req.body));
@@ -144,7 +180,6 @@ app.post("/logout_account", function (req, res) {
   sessionAccount.identity = null;
   sessionAccount.firstName = null;
   sessionAccount.lastName = null;
-  sessionAccount.index = null;
   params.msg = "logout successfully.";
   params_str = JSON.stringify(params);
   console.log("server res = "+params_str);
