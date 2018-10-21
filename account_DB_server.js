@@ -16,25 +16,29 @@ var transporter = nodemailer.createTransport({
   }
 });
 
-var sessionAccount = {identity:null, firstName:null, lastName:null};
+var sessionAccount = { identity: null, firstName: null, lastName: null };
 var resetIdentity = null;
 var resetCode = null;
-var resetSuccess = 0;
+var resetCodeCheck = 0;
 
-app.post("/login_account", async (req, res) => {
-  let params = {msg:"", success:0};
+app.post("/login_account", async(req, res) => {
+  let params = { msg: "", success: 0 };
   let params_str = "";
   try {
-    console.log("server req = "+JSON.stringify(req.body));
-    let identity = (req.body.identity)?req.body.identity:"identity error";
-    let password = (req.body.password)?req.body.password:"password error";
-    let client = await MongoClient.connect(url, {useNewUrlParser:true});
-    let dbo = client.db("account_server_db");
-    let query = {identity:identity};
+    console.log("server req = " + JSON.stringify(req.body));
+    let identity = (req.body.identity)? req.body.identity : null;
+    let password = (req.body.password)? req.body.password : null;
+    if (!identity || !password) {
+      params.msg = "Fill up the blanks."
+      return;
+    }
+    let db = await MongoClient.connect(url, { useNewUrlParser: true });
+    let dbo = db.db("account_server_db");
+    let query = { identity: identity };
     let result = await dbo.collection("members").findOne(query);
-    client.close();
+    db.close();
     if (!result) {
-      params.msg = identity+" doesn't exist.";
+      params.msg = identity + " doesn't exist.";
     }
     else {
       if (result.password == password) {
@@ -42,10 +46,10 @@ app.post("/login_account", async (req, res) => {
         sessionAccount.firstName = result.firstName;
         sessionAccount.lastName = result.lastName;
         params.success = 1;
-        params.msg = identity+" login successfully..";
+        params.msg = identity + " login successfully.";
       }
       else {
-        params.msg = identity+"'s password is different.";
+        params.msg = identity + "'s password is different.";
       }
     }
   }
@@ -54,12 +58,255 @@ app.post("/login_account", async (req, res) => {
   }
   finally {
     params_str = JSON.stringify(params);
-    console.log("server res = "+params_str);
-    res.writeHead(200, {"Content-Type":"text/plain"});
+    console.log("server res = " + params_str);
+    res.writeHead(200, { "Content-Type": "text/plain" });
     res.end(params_str);
   }
 });
 
+app.post("/create_account", async(req, res) => {
+  let params = { msg: "", success: 0 };
+  let params_str = "";
+  try {
+    console.log("server req = " + JSON.stringify(req.body));
+    let identity = (req.body.identity)? req.body.identity : null;
+    let password1 = (req.body.password1)? req.body.password1 : null;
+    let password2 = (req.body.password2)? req.body.password2 : null;
+    let firstName = (req.body.firstName)? req.body.firstName : null;
+    let lastName = (req.body.lastName)? req.body.lastName : null;
+    if (!identity || !password1 || !password2 || !firstName || !lastName) {
+      params.msg = "Fill up the blanks."
+      return;
+    }
+    let personal = { identity: identity, password: password1, firstName: firstName, lastName: lastName };
+    let db = await MongoClient.connect(url, { useNewUrlParser: true })
+    let dbo = db.db("account_server_db");
+    let query = { identity: identity };
+    let result = await dbo.collection("members").findOne(query);
+    if (!result) {
+      if (password1 == password2) {
+        let info = await dbo.collection("members").insertOne(personal);
+        db.close();
+        params.msg = identity+" is created successfully.";
+      }
+      else {
+        db.close();
+        params.msg = "The two passwords are different.";
+      }
+    }
+    else {
+      db.close();
+      params.msg = identity+" already exists.";
+    }
+  }
+  catch (err) {
+    console.log(err.message);
+  }
+  finally {
+    params_str = JSON.stringify(params);
+    console.log("server res = " + params_str);
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end(params_str);
+  }
+});
+
+app.post("/get_account_info", (req, res) => {
+  let params = { msg: "", sessionAccount: sessionAccount };
+  let params_str = "";
+  console.log("server req = " + JSON.stringify(req.body));
+  if (sessionAccount.identity) {
+    params.msg = "Displayed.";
+  }
+  else {
+    params.msg = "Login account doesn't exist. Login first!";
+  }
+  params_str = JSON.stringify(params);
+  console.log("server res = " + params_str);
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end(params_str);
+});
+
+app.post("/logout_account", (req, res) => {
+  let params = { msg: "" };
+  let params_str = "";
+  console.log("server req = " + JSON.stringify(req.body));
+  sessionAccount.identity = null;
+  sessionAccount.firstName = null;
+  sessionAccount.lastName = null;
+  params.msg = "logout successfully.";
+  params_str = JSON.stringify(params);
+  console.log("server res = " + params_str);
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end(params_str);
+});
+
+app.post("/send_reset_code", async(req, res) => {
+  let params = { msg: "" };
+  let params_str = "";
+  try {
+    console.log("server req = " + JSON.stringify(req.body));
+    let identity = (req.body.identity)? req.body.identity : null;
+    if (!identity) {
+      params.msg = "Fill up the blanks."
+      return;
+    }
+    let db = await MongoClient.connect(url, { useNewUrlParser: true });
+    let dbo = db.db("account_server_db");
+    let query = { identity: identity };
+    let result = await dbo.collection("members").findOne(query);
+    db.close();
+    if (!result) {
+      params.msg = identity+" does not exist.";
+    }
+    else {
+      resetIdentity = identity;
+      let rndNum = "";
+      for (let ii = 0; ii < 5; ii ++) {
+        rndNum += Math.floor(Math.random() * 10);
+      }
+      resetCode = rndNum;
+      let mailOptions = {
+        from: "copper.iron.29@gmail.com",
+        to: identity,
+        subject: "subject.",
+        text: "text '" + rndNum + "'."
+      };
+      let info = await transporter.sendMail(mailOptions);
+      console.log("Email sent: " + info.response);
+      params.msg = "Reset code has been sent to " + identity + ". Please check it out.";
+    }
+  }
+  catch (err) {
+    console.log(err.message);
+  }
+  finally {
+    params_str = JSON.stringify(params);
+    console.log("server res = " + params_str);
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end(params_str);
+  }
+});
+
+app.post("/check_reset_code", (req, res) => {
+  let params = { msg: "", success: 0 };
+  let params_str = "";
+  console.log("server req = " + JSON.stringify(req.body));
+  let code = (req.body.code)? req.body.code : null;
+  if (!code) {
+    params.msg = "Fill up the blanks."
+    return;
+  }
+  if (code == resetCode) {
+    resetCode = null;
+    resetCodeCheck = 1;
+    params.success = 1;
+    params.msg = "Reset code is correct."
+  }
+  else {
+    params.msg = "Reset code is incorrect."
+  }
+  params_str = JSON.stringify(params);
+  console.log("server res = " + params_str);
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end(params_str);
+});
+
+app.post("/change_password", async(req, res) => {
+  let params = { msg: "", success: 0 };
+  let params_str = "";
+  try {
+    if (resetCodeCheck == 0) {
+      params.msg = 'You need to check the reset code first.';
+      return;
+    }
+    console.log("server req = " + JSON.stringify(req.body));
+    let password1 = (req.body.password1)? req.body.password1 : null;
+    let password2 = (req.body.password2)? req.body.password2 : null;
+    if (!password1 || !password2) {
+      params.msg = "Fill up the blanks."
+      return;
+    }
+    let db = await MongoClient.connect(url, { useNewUrlParser: true });
+    let dbo = db.db("account_server_db");
+    let query = { identity: resetIdentity };
+    let result = await dbo.collection("members").findOne(query);
+    if (!result) {
+      db.close();
+      params.msg = resetIdentity + " does not exist.";
+    }
+    else {
+      if (password1 == password2) {
+        let update = { $set: { password: password1 } };
+        let info = await dbo.collection("members").updateOne(query, update)
+        db.close();
+        resetIdentity = null;
+        resetCodeCheck = 0;
+        parame.success = 1;
+        params.msg = "Password is changed Successfully.";
+      }
+      else {
+        db.close();
+        params.msg = "The two passwords are different.";
+      }
+    }
+  }
+  catch (err) {
+    console.log(err.message);
+  }
+  finally {
+    params_str = JSON.stringify(params);
+    console.log("server res = " + params_str);
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end(params_str);
+  }
+});
+
+app.post("/change_account_info", async(req, res) => {
+  let params = { msg: "", success: 0 };
+  let params_str = "";
+  try {
+    console.log("server req = " + JSON.stringify(req.body));
+    let password1 = (req.body.password1)? req.body.password1 : null;
+    let password2 = (req.body.password2)? req.body.password2 : null;
+    let firstName = (req.body.firstName)? req.body.firstName : null;
+    let lastName = (req.body.lastName)? req.body.lastName : null;
+    if (!password1 || !password2 || !firstName || !lastName) {
+      params.msg = "Fill up the blanks."
+      return;
+    }
+    let db = await MongoClient.connect(url, { useNewUrlParser: true });
+    let dbo = db.db("account_server_db");
+    if (password1 == password2) {
+      let query = { identity: sessionAccount.identity };
+      let update = { $set: {password: password1, firstName: firstName, lastName: lastName } };
+      let info = await dbo.collection("members").updateOne(query, update);
+      db.close();
+      params.success = 1;
+      params.msg = "Informaion is changed successfully.";
+    }
+    else {
+      db.close();
+      params.msg = "The two passwords are different.";
+    }
+  }
+  catch (err) {
+    console.log(err.message);
+  }
+  finally {
+    params_str = JSON.stringify(params);
+    console.log("server res = " + params_str);
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end(params_str);
+  }
+});
+
+app.use("/", express.static(__dirname)); //  + '/public'));
+
+var server = app.listen(8103, "127.0.0.1", function() {
+  var host = server.address().address;
+  var port = server.address().port;
+  console.log("Example app listening at http://%s:%s", host, port);
+});
 
 
 /*  function(err, db) {
@@ -104,7 +351,7 @@ app.post("/login_account", async (req, res) => {
 });
 */
 
-app.post("/create_account", function (req, res) {
+/*
   console.log("server req = "+JSON.stringify(req.body));
   let identity = (req.body.identity)?req.body.identity:"identity error";
   let password1 = (req.body.password1)?req.body.password1:"password1 error";
@@ -151,46 +398,12 @@ app.post("/create_account", function (req, res) {
       }
     });
   });
-});
+*/
 
-app.post("/get_account_info", function (req, res) {
-  console.log("server req = "+JSON.stringify(req.body));
-  let params = {msg:"", sessionAccount:sessionAccount};
-  let params_str = "";
-  if (sessionAccount.identity) {
-    params.msg = 'account ID is '+sessionAccount.identity;
-    params_str = JSON.stringify(params);
-    console.log("server res = "+params_str);
-    res.writeHead(200, {"Content-Type":"text/plain"});
-    res.end(params_str);
-  }
-  else {
-    params.msg = "Login account doesn't exist. Login first!";
-    params_str = JSON.stringify(params);
-    console.log("server res = "+params_str);
-    res.writeHead(200, {"Content-Type":"text/plain"});
-    res.end(params_str);
-  }
-});
-
-app.post("/logout_account", function (req, res) {
-  console.log("server req = "+JSON.stringify(req.body));
-  let params = {msg:""};
-  let params_str = "";
-  sessionAccount.identity = null;
-  sessionAccount.firstName = null;
-  sessionAccount.lastName = null;
-  params.msg = "logout successfully.";
-  params_str = JSON.stringify(params);
-  console.log("server res = "+params_str);
-  res.writeHead(200, {"Content-Type":"text/plain"});
-  res.end(params_str);
-});
-
-app.post("/send_reset_code", function (req, res) {
-  console.log("server req = "+JSON.stringify(req.body));
+/*
+  console.log("server req = " + JSON.stringify(req.body));
   let identity = (req.body.identity)?req.body.identity:"identity error";
-  let params = {msg:""};
+  let params = { msg: "" };
   let params_str = "";
   MongoClient.connect(url, {useNewUrlParser:true}, function(err, db) {
     if (err) throw err;
@@ -241,35 +454,11 @@ app.post("/send_reset_code", function (req, res) {
       }
     });
   });
-});
+*/
 
-app.post("/check_reset_code", function (req, res) {
+/*
   console.log("server req = "+JSON.stringify(req.body));
-  let code = (req.body.code)?req.body.code:"code error";
-  let params = {msg:"", success:0};
-  let params_str = "";
-  if (code == resetCode) {
-    resetCode = null;
-    resetSuccess = 1;
-    params.msg = "Reset code is correct."
-    params.success = 1;
-    params_str = JSON.stringify(params);
-    console.log("server res = "+params_str);
-    res.writeHead(200, {"Content-Type":"text/plain"});
-    res.end(params_str);
-  }
-  else {
-    params.msg = "Reset code is incorrect."
-    params_str = JSON.stringify(params);
-    console.log("server res = "+params_str);
-    res.writeHead(200, {"Content-Type":"text/plain"});
-    res.end(params_str);
-  }
-});
-
-app.post("/change_password", function (req, res) {
-  console.log("server req = "+JSON.stringify(req.body));
-  if (resetSuccess == 0) {
+  if (resetCodeCheck == 0) {
     params.msg = 'You need to check the reset code first.';
     params_str = JSON.stringify(params);
     console.log("server res = "+params_str);
@@ -300,7 +489,7 @@ app.post("/change_password", function (req, res) {
           let update = {$set:{password:password1}};
           dbo.collection("members").updateOne(query, update, function(err, res) {
             if (err) throw err;
-          resetSuccess = 0;
+          resetCodeCheck = 0;
           params.msg = "Password is changed Successfully";
           db.close();
           params_str = JSON.stringify(params);
@@ -320,9 +509,9 @@ app.post("/change_password", function (req, res) {
       }
     });
   });
-});
+*/
 
-app.post("/change_account_info", function (req, res) {
+/*
   console.log("server req = "+JSON.stringify(req.body));
   let password1 = (req.body.password1)?req.body.password1:"password1 error";
   let password2 = (req.body.password2)?req.body.password2:"password2 error";
@@ -355,12 +544,4 @@ app.post("/change_account_info", function (req, res) {
       res.end(params_str);
     }
   });
-});
-
-app.use("/", express.static(__dirname)); //  + '/public'));
-
-var server = app.listen(8103, "127.0.0.1", function () {
-  var host = server.address().address;
-  var port = server.address().port;
-  console.log("Example app listening at http://%s:%s", host, port);
-});
+*/

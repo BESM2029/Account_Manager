@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <link rel="stylesheet" type="text/css" href="http://code.jquery.com/mobile/1.4.3/jquery.mobile-1.4.3.min.css" />
-    <title>Hello jQM</title>
+    <title>Account Manager</title>
   </head>
   <body>
     <script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
@@ -15,18 +15,18 @@
     <script>
       let noloading_pages = 6;
       let nopages_loaded = 0;
-      $(document).bind("mobileinit", function(){
+      $(document).bind("mobileinit", function() {
        $.mobile.pushStateEnabled = false;
       });
       $(document).ready(function() {
-        $(document).on( "pagecontainerload", function(event, ui) {
-          nopages_loaded++; // increasing the page counter 
+        $(document).on("pagecontainerload", function(event, ui) {
+          nopages_loaded ++; // increasing the page counter 
           if(noloading_pages == nopages_loaded) { // if the page is last one. 
             console.log("navigating to page_main...");
             $.mobile.pageContainer.pagecontainer("change", "#page_main");
             console.log("navigating done!");
           } 
-        } );
+        });
         console.log("loading pagecontainers...");
         $.mobile.pageContainer.pagecontainer("load", "view/main.html");
         $.mobile.pageContainer.pagecontainer("load", "view/create.html");

@@ -1,10 +1,10 @@
 <div data-role="page" id="page_session_main" data-dom-cache="true" >
 	<div>
 		ID: <span id="login_id"></span><br>
-		Hello, <span id="login_fn"></span> <span class="Login_ln"></span>
+		Hello, <span id="login_fn"></span> <span id="Login_ln"></span>
 	</div>
-	<input type="button" onclick="logout()" value="Logout">
-	<input type="button" onclick="getAccountInfo()" value="Get Account Info" onload="GetAccountInfo()">
+	<input type="button" onclick="getAccountInfo()" value="Get Account Info"><!-- onload="GetAccountInfo()"-->
+  <input type="button" onclick="logout()" value="Logout">
 	<a href="#page_session_account_edit">Go to Change Account Info</a>
 	<div class="notice"></div>
 </div>
