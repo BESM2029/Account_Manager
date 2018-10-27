@@ -7,6 +7,9 @@ var app = express();
 var bodyParser = require("body-parser");
 app.use(bodyParser());
 
+var dbName = "account_server_db";
+var collectionName = "members";
+
 var nodemailer = require("nodemailer");
 var transporter = nodemailer.createTransport({
   service: "gmail",
@@ -33,9 +36,9 @@ app.post("/login_account", async(req, res) => {
       return;
     }
     let db = await MongoClient.connect(url, { useNewUrlParser: true });
-    let dbo = db.db("account_server_db");
+    let dbo = db.db(dbName);
     let query = { identity: identity };
-    let result = await dbo.collection("members").findOne(query);
+    let result = await dbo.collection(collectionName).findOne(query);
     db.close();
     if (!result) {
       params.msg = identity + " doesn't exist.";
@@ -80,12 +83,12 @@ app.post("/create_account", async(req, res) => {
     }
     let personal = { identity: identity, password: password1, firstName: firstName, lastName: lastName };
     let db = await MongoClient.connect(url, { useNewUrlParser: true })
-    let dbo = db.db("account_server_db");
+    let dbo = db.db(dbName);
     let query = { identity: identity };
-    let result = await dbo.collection("members").findOne(query);
+    let result = await dbo.collection(collectionName).findOne(query);
     if (!result) {
       if (password1 == password2) {
-        let info = await dbo.collection("members").insertOne(personal);
+        let info = await dbo.collection(collectionName).insertOne(personal);
         db.close();
         params.msg = identity+" is created successfully.";
       }
@@ -151,9 +154,9 @@ app.post("/send_reset_code", async(req, res) => {
       return;
     }
     let db = await MongoClient.connect(url, { useNewUrlParser: true });
-    let dbo = db.db("account_server_db");
+    let dbo = db.db(dbName);
     let query = { identity: identity };
-    let result = await dbo.collection("members").findOne(query);
+    let result = await dbo.collection(collectionName).findOne(query);
     db.close();
     if (!result) {
       params.msg = identity+" does not exist.";
@@ -227,9 +230,9 @@ app.post("/change_password", async(req, res) => {
       return;
     }
     let db = await MongoClient.connect(url, { useNewUrlParser: true });
-    let dbo = db.db("account_server_db");
+    let dbo = db.db(dbName);
     let query = { identity: resetIdentity };
-    let result = await dbo.collection("members").findOne(query);
+    let result = await dbo.collection(collectionName).findOne(query);
     if (!result) {
       db.close();
       params.msg = resetIdentity + " does not exist.";
@@ -237,7 +240,7 @@ app.post("/change_password", async(req, res) => {
     else {
       if (password1 == password2) {
         let update = { $set: { password: password1 } };
-        let info = await dbo.collection("members").updateOne(query, update)
+        let info = await dbo.collection(collectionName).updateOne(query, update)
         db.close();
         resetIdentity = null;
         resetCodeCheck = 0;
@@ -275,11 +278,11 @@ app.post("/change_account_info", async(req, res) => {
       return;
     }
     let db = await MongoClient.connect(url, { useNewUrlParser: true });
-    let dbo = db.db("account_server_db");
+    let dbo = db.db(dbName);
     if (password1 == password2) {
       let query = { identity: sessionAccount.identity };
       let update = { $set: {password: password1, firstName: firstName, lastName: lastName } };
-      let info = await dbo.collection("members").updateOne(query, update);
+      let info = await dbo.collection(collectionName).updateOne(query, update);
       db.close();
       params.success = 1;
       params.msg = "Informaion is changed successfully.";
@@ -311,9 +314,9 @@ var server = app.listen(8103, "127.0.0.1", function() {
 
 /*  function(err, db) {
     if (err) throw err;
-    let dbo = db.db("account_server_db");
+    let dbo = db.db(dbName);
     let query = {identity:identity};
-    dbo.collection("members").findOne(query, function(err, result) {
+    dbo.collection(collectionName).findOne(query, function(err, result) {
       if (err) throw err;
       if (!result) {
         params.msg = identity+" doesn't exist.";
@@ -363,13 +366,13 @@ var server = app.listen(8103, "127.0.0.1", function() {
   let params_str = "";
   MongoClient.connect(url, {useNewUrlParser:true}, function(err, db) {
     if (err) throw err;
-    let dbo = db.db("account_server_db");
+    let dbo = db.db(dbName);
     let query = {identity:identity};
-    dbo.collection("members").findOne(query, function(err, result) {
+    dbo.collection(collectionName).findOne(query, function(err, result) {
       if (err) throw err;
       if (!result) {
         if (password1 == password2) {
-          dbo.collection("members").insertOne(personal, function(err, info) {
+          dbo.collection(collectionName).insertOne(personal, function(err, info) {
             if (err) throw err;
             params.msg = identity+" is created successfully.";
             db.close();
@@ -407,9 +410,9 @@ var server = app.listen(8103, "127.0.0.1", function() {
   let params_str = "";
   MongoClient.connect(url, {useNewUrlParser:true}, function(err, db) {
     if (err) throw err;
-    let dbo = db.db("account_server_db");
+    let dbo = db.db(dbName);
     let query = {identity: identity};
-    dbo.collection("members").findOne(query, function(err, result) {
+    dbo.collection(collectionName).findOne(query, function(err, result) {
       if (err) throw err;
       if (!result) {
         params.msg = identity+" does not exist.";
@@ -472,9 +475,9 @@ var server = app.listen(8103, "127.0.0.1", function() {
   let params_str = "";
   MongoClient.connect(url, {useNewUrlParser:true}, function(err, db) {
     if (err) throw err;
-    let dbo = db.db("account_server_db");
+    let dbo = db.db(dbName);
     let query = {identity: resetIdentity};
-    dbo.collection("members").findOne(query, function(err, result) {
+    dbo.collection(collectionName).findOne(query, function(err, result) {
       if (err) throw err;
       if (!result) {
         params.msg = resetIdentity+" does not exist.";
@@ -487,7 +490,7 @@ var server = app.listen(8103, "127.0.0.1", function() {
       else {
         if (password1 == password2) {
           let update = {$set:{password:password1}};
-          dbo.collection("members").updateOne(query, update, function(err, res) {
+          dbo.collection(collectionName).updateOne(query, update, function(err, res) {
             if (err) throw err;
           resetCodeCheck = 0;
           params.msg = "Password is changed Successfully";
@@ -521,11 +524,11 @@ var server = app.listen(8103, "127.0.0.1", function() {
   let params_str = "";
   MongoClient.connect(url, {useNewUrlParser:true}, function(err, db) {
     if (err)  throw err;
-    let dbo = db.db("account_server_db");
+    let dbo = db.db(dbName);
     if (password1 == password2) {
       let query = {identity: sessionAccount.identity};
       let update = {$set:{password:password1, firstName:firstName, lastName:lastName}};
-      dbo.collection("members").updateOne(query, update, function(err, info) {
+      dbo.collection(collectionName).updateOne(query, update, function(err, info) {
         if (err) throw err;
         params.msg = "Informaion is changed successfully";
         db.close();

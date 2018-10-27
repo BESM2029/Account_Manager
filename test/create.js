@@ -21,9 +21,9 @@ function createAccount(Account_data) {
 describe('Create Account Test', () => {
   it('Should assert true to be true', () => {
     //expect(true).to.be.true;
-    assert(true);
+    assert(false);
   });
-  it("Create an account", () => {
+  it("Create an account", async() => {
       let AccountData 
           = { identity: "moon.hwang@gmail.com", 
               password1: "ironbag123",
@@ -31,15 +31,18 @@ describe('Create Account Test', () => {
               firstName: "Moon Ho", 
               lastName: "Hwang"};
 
-      createAccount(AccountData)
-      .then(res => {
+      let res = await createAccount(AccountData)
+      //.then(res => {
         console.log(res);
         //expect an object back
         expect(typeof res).to.equal('object');
 
         //Test result of name, company and location for the response
-        expect(res.success).to.equal(0); 
-      })
-      .catch(error=>console.log(error));
+        //expect(res.success).to.equal(1);
+        console.log("before assert");
+        assert(res.success == 1); 
+        console.log("after assert");
+      //})
+      //.catch(error=>console.log(error));
   });
 });
