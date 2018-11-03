@@ -1,23 +1,27 @@
-var MongoClient = require("mongodb").MongoClient;
-var url = "mongodb://localhost:27017/";
+var path = require("path");
+var MG = require(path.resolve(__dirname, "./MongoGraph.js"));
 
-var express = require("express");
-var fs = require("fs");
-var app = express();
-var bodyParser = require("body-parser");
+const express = require("express");
+const app = express();
+const bodyParser = require("body-parser");
 app.use(bodyParser());
 
-var dbName = "account_server_db";
-var collectionName = "members";
+const fs = require("fs");
 
-var nodemailer = require("nodemailer");
-var transporter = nodemailer.createTransport({
+const MongoClient = require("mongodb").MongoClient;
+const url = "mongodb://localhost:27017/";
+
+const nodemailer = require("nodemailer");
+const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: "copper.iron.29@gmail.com",
     pass: "JungJun_0829"
   }
 });
+
+var dbName = "account_server_db";
+var collectionName = "members";
 
 var sessionAccount = { identity: null, firstName: null, lastName: null };
 var resetIdentity = null;
@@ -35,15 +39,17 @@ app.post("/login_account", async(req, res) => {
       params.msg = "Fill up the blanks."
       return;
     }
-    let db = await MongoClient.connect(url, { useNewUrlParser: true });
-    let dbo = db.db(dbName);
+    let client = await MongoClient.connect(url, { useNewUrlParser: true });
+    let gdb = new MG.Graph(client, { print_out: true });
     let query = { identity: identity };
-    let result = await dbo.collection(collectionName).findOne(query);
-    db.close();
-    if (!result) {
+    let results = await gdb.get(dbName, collectionName, query);
+    client.close();
+    console.log("results = " + results);
+    if (results.length == 0) {
       params.msg = identity + " doesn't exist.";
     }
     else {
+      let result = results[0];
       if (result.password == password) {
         sessionAccount.identity = result.identity;
         sessionAccount.firstName = result.firstName;
@@ -82,25 +88,23 @@ app.post("/create_account", async(req, res) => {
       return;
     }
     let personal = { identity: identity, password: password1, firstName: firstName, lastName: lastName };
-    let db = await MongoClient.connect(url, { useNewUrlParser: true })
-    let dbo = db.db(dbName);
+    let client = await MongoClient.connect(url, { useNewUrlParser: true })
+    let gdb = new MG.Graph(client, { print_out: true });
     let query = { identity: identity };
-    let result = await dbo.collection(collectionName).findOne(query);
-    if (!result) {
+    let results = await gdb.get(dbName, collectionName, query);
+    if (results.length == 0) {
       if (password1 == password2) {
-        let info = await dbo.collection(collectionName).insertOne(personal);
-        db.close();
+        let info = await gdb.insert(dbName, collectionName, personal);
         params.msg = identity+" is created successfully.";
       }
       else {
-        db.close();
         params.msg = "The two passwords are different.";
       }
     }
     else {
-      db.close();
       params.msg = identity+" already exists.";
     }
+    client.close();
   }
   catch (err) {
     console.log(err.message);
@@ -153,12 +157,12 @@ app.post("/send_reset_code", async(req, res) => {
       params.msg = "Fill up the blanks."
       return;
     }
-    let db = await MongoClient.connect(url, { useNewUrlParser: true });
-    let dbo = db.db(dbName);
+    let client = await MongoClient.connect(url, { useNewUrlParser: true });
+    let gdb = new MG.Graph(client, { print_out: true });
     let query = { identity: identity };
-    let result = await dbo.collection(collectionName).findOne(query);
-    db.close();
-    if (!result) {
+    let results = await gdb.get(dbName, collectionName, query);
+    client.close();
+    if (results.length == 0) {
       params.msg = identity+" does not exist.";
     }
     else {
@@ -229,29 +233,28 @@ app.post("/change_password", async(req, res) => {
       params.msg = "Fill up the blanks."
       return;
     }
-    let db = await MongoClient.connect(url, { useNewUrlParser: true });
-    let dbo = db.db(dbName);
+    let client = await MongoClient.connect(url, { useNewUrlParser: true });
+    let gdb = new MG.Graph(client, { print_out: true });
     let query = { identity: resetIdentity };
-    let result = await dbo.collection(collectionName).findOne(query);
-    if (!result) {
-      db.close();
+    let results = await gdb.get(dbName, collectionName, query);
+    if (results.length == 0) {
       params.msg = resetIdentity + " does not exist.";
     }
     else {
       if (password1 == password2) {
-        let update = { $set: { password: password1 } };
-        let info = await dbo.collection(collectionName).updateOne(query, update)
-        db.close();
+        let update = { password: password1 };
+        let result = await gdb.update(dbName, collectionName, query, update);
+        // check result later.
         resetIdentity = null;
         resetCodeCheck = 0;
-        parame.success = 1;
+        params.success = 1;
         params.msg = "Password is changed Successfully.";
       }
       else {
-        db.close();
         params.msg = "The two passwords are different.";
       }
     }
+    client.close();
   }
   catch (err) {
     console.log(err.message);
@@ -277,20 +280,25 @@ app.post("/change_account_info", async(req, res) => {
       params.msg = "Fill up the blanks."
       return;
     }
-    let db = await MongoClient.connect(url, { useNewUrlParser: true });
-    let dbo = db.db(dbName);
-    if (password1 == password2) {
-      let query = { identity: sessionAccount.identity };
-      let update = { $set: {password: password1, firstName: firstName, lastName: lastName } };
-      let info = await dbo.collection(collectionName).updateOne(query, update);
-      db.close();
-      params.success = 1;
-      params.msg = "Informaion is changed successfully.";
+    let client = await MongoClient.connect(url, { useNewUrlParser: true });
+    let gdb = new MG.Graph(client, { print_out: true });
+    let query = { identity: sessionAccount.identity };
+    let results = await gdb.get(dbName, collectionName, query);
+    if (results.length == 1) {
+      if (password1 == password2) {
+        let update = { password: password1, firstName: firstName, lastName: lastName };
+        let result = await gdb.update(dbName, collectionName, query, update);
+        params.success = 1;
+        params.msg = "Informaion is changed successfully.";
+      }
+      else {
+        params.msg = "The two passwords are different.";
+      }
     }
     else {
-      db.close();
-      params.msg = "The two passwords are different.";
+      params.msg = sessionAccount.identity + " doesn't exist.";
     }
+    client.close();
   }
   catch (err) {
     console.log(err.message);
