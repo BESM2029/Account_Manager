@@ -1,10 +1,13 @@
 function getAccountInfo() {
+  let id = sessionStorage.getItem('sessionID');
+  var params = { identity: id }
   $.ajax({
     "async": true,
     "type": "post",
     "global": false,
     "dataType": "html",
     "url": "get_account_info",
+    "data": params,
     "success": function(parms) {
       let parms_arr = JSON.parse(parms);
       $(".notice").html(parms_arr.msg);
@@ -19,17 +22,21 @@ function getAccountInfo() {
   });
 }
 
-function logout() {
+function logoutAccount() {
+  let id = sessionStorage.getItem('sessionID');
+  var params = { identity: id }
   $.ajax({
     "async": true,
     "type": "post",
     "global": false,
     "dataType": "html",
     "url": "logout_account",
+    "data": params,
     "success": function(params) {
       $.mobile.changePage("#page_main", { transition: "none" });
       let params_arr = JSON.parse(params)
       $(".notice").html(params_arr.msg);
+      sessionStorage.removeItem('sessionID');
     },
    "error": function(params) {
       let params_arr = JSON.parse(params)
@@ -39,7 +46,8 @@ function logout() {
 }
 
 function changeAccountInfo() {
-  var params = { password1: $("#session_pw1").val(), password2: $("#session_pw2").val(), firstName: $("#session_first_name").val(), lastName: $("#session_last_name").val() };
+  let id = sessionStorage.getItem('sessionID');
+  var params = { identity: id, password1: $("#session_pw1").val(), password2: $("#session_pw2").val(), firstName: $("#session_first_name").val(), lastName: $("#session_last_name").val() };
   console.log("client params = " + JSON.stringify(params));
   $.ajax({
     "async": true,

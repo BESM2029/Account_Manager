@@ -18,14 +18,11 @@ const transporter = nodemailer.createTransport({
 });
 
 var MG = require("@mhhwang2002/MongoGraph");
+const jungJun = require("./session_manager.js");
+const sessionManager = new jungJun.SessionManager();
 
 var dbNameDefault = "account_server_db_default";
 var collectionName = "members";
-
-var sessionAccount = { identity: null, firstName: null, lastName: null };
-var resetIdentity = null;
-var resetCode = null;
-var resetCodeCheck = 0;
 
 app.post("/login_account", async(req, res) => {
   let params = { msg: "", success: 0 };
@@ -52,9 +49,8 @@ app.post("/login_account", async(req, res) => {
     else {
       let result = results[0];
       if (result.password == password) {
-        sessionAccount.identity = result.identity;
-        sessionAccount.firstName = result.firstName;
-        sessionAccount.lastName = result.lastName;
+        let session = { identity: result.identity, firstName: result.firstName, lastName: result.lastName }
+        sessionManager.loginSession(session);
         params.success = 1;
         params.msg = identity + " login successfully.";
       }
@@ -122,16 +118,23 @@ app.post("/create_account", async(req, res) => {
 });
 
 app.post("/get_account_info", (req, res) => {
-  let params = { msg: "", success: 0, sessionAccount: sessionAccount };
-  let params_str = "";
-  console.log("---------------------------------------------'/get_account_info' called.---------------------------------------------");
   console.log("server req = " + JSON.stringify(req.body));
-  if (sessionAccount.identity) {
-    params.success = 1;
-    params.msg = "Displayed.";
+  let params = { msg: "", success: 0 };
+  if (req.body.identity){
+    let sessionInfo = sessionManager.getSessionAccountInfo(req.body.identity);
+    let params_str = "";
+    console.log("---------------------------------------------'/get_account_info' called.---------------------------------------------");
+    if (sessionInfo) {
+      params.success = 1;
+      params["sessionAccount"] = sessionInfo;
+      params.msg = "Displayed.";
+    }
+    else {
+      params.msg = "Login has not been made. Login first!";
+    }
   }
   else {
-    params.msg = "Login account doesn't exist. Login first!";
+    params.msg = "Session identity has not been passed.";
   }
   params_str = JSON.stringify(params);
   console.log("server res = " + params_str);
@@ -140,15 +143,19 @@ app.post("/get_account_info", (req, res) => {
 });
 
 app.post("/logout_account", (req, res) => {
+  console.log("server req = " + JSON.stringify(req.body));
   let params = { msg: "", success: 0 };
   let params_str = "";
   console.log("---------------------------------------------'/logout_account' called.---------------------------------------------");
-  console.log("server req = " + JSON.stringify(req.body));
-  sessionAccount.identity = null;
-  sessionAccount.firstName = null;
-  sessionAccount.lastName = null;
-  params.success = 1;
-  params.msg = "logout successfully.";
+  if (req.body.identity){
+    sessionManager.logoutSession(req.body.identity);
+    let params_str = "";
+    params.msg = "logout successfully.";
+    params.success = 1;
+  }
+  else {
+    params.msg = "Session identity has not been passed.";
+  }
   params_str = JSON.stringify(params);
   console.log("server res = " + params_str);
   res.writeHead(200, { "Content-Type": "text/plain" });
@@ -177,12 +184,11 @@ app.post("/forgot_password", async(req, res) => {
       params.msg = identity+" does not exist.";
     }
     else {
-      resetIdentity = identity;
       let rndNum = "";
       for (let ii = 0; ii < 5; ii ++) {
         rndNum += Math.floor(Math.random() * 10);
       }
-      resetCode = rndNum;
+      sessionManager.resettingPasswordSession(identity, rndNum);
       let mailOptions = {
         from: "copper.iron.29@gmail.com",
         to: identity,
@@ -215,19 +221,29 @@ app.post("/check_reset_code", (req, res) => {
   let params_str = "";
   console.log("---------------------------------------------'/check_reset_code' called.---------------------------------------------");
   console.log("server req = " + JSON.stringify(req.body));
-  let code = req.body.code;
-  if (!code) {
-    params.msg = "Fill up the blanks."
-    return;
-  }
-  if (code == resetCode) {
-    resetCode = null;
-    resetCodeCheck = 1;
-    params.success = 1;
-    params.msg = "Reset code is correct."
+  if (req.body.identity) {
+    if (req.body.code) {
+      let resetCode = sessionManager.getResetCode(req.body.identity);
+      if (resetCode) {
+        if (req.body.code == resetCode) {
+          sessionManager.setResetCodeVerified(req.body.identity);
+          params.success = 1;
+          params.msg = "Reset code is correct."
+        }
+        else {
+          params.msg = "Reset code is incorrect."
+        }
+      }
+      else {
+        params.msg = "Resetting password has not been requested.";
+      }
+    }
+    else {
+      params.msg = "ResetCode was not set.";
+    }
   }
   else {
-    params.msg = "Reset code is incorrect."
+    params.msg = "Session ID was not set.";
   }
   params_str = JSON.stringify(params);
   console.log("server res = " + params_str);
@@ -236,44 +252,49 @@ app.post("/check_reset_code", (req, res) => {
 });
 
 app.post("/change_password", async(req, res) => {
+  console.log("---------------------------------------------'/change_password' called.---------------------------------------------");
+  console.log("server req = " + JSON.stringify(req.body));
   let params = { msg: "", success: 0 };
   let params_str = "";
   try {
-    if (resetCodeCheck == 0) {
-      params.msg = 'You need to check the reset code first.';
-      return;
-    }
-    console.log("---------------------------------------------'/change_password' called.---------------------------------------------");
-    console.log("server req = " + JSON.stringify(req.body));
-    let dbName = (req.body.__dbName__)? req.body.__dbName__ : dbNameDefault;
-    let password1 = req.body.password1;
-    let password2 = req.body.password2;
-    if (!password1 || !password2) {
-      params.msg = "Fill up the blanks."
-      return;
-    }
-    let client = await MongoClient.connect(url, { useNewUrlParser: true });
-    let gdb = new MG.Graph(client, { print_out: true });
-    let query = { identity: resetIdentity };
-    let results = await gdb.get(dbName, collectionName, query);
-    if (results.length == 0) {
-      params.msg = resetIdentity + " does not exist.";
-    }
-    else {
-      if (password1 == password2) {
-        let update = { password: password1 };
-        let result = await gdb.update(dbName, collectionName, query, update);
-        // check result later.
-        resetIdentity = null;
-        resetCodeCheck = 0;
-        params.success = 1;
-        params.msg = "Password is changed Successfully.";
+    if (req.body.identity) {
+      if (sessionManager.checkResetCodeVerified(req.body.identity)) {
+        let dbName = (req.body.__dbName__)? req.body.__dbName__ : dbNameDefault;
+        let password1 = req.body.password1;
+        let password2 = req.body.password2;
+        if (!password1 || !password2) {
+          params.msg = "Fill up the blanks."
+          return;
+        }
+        let client = await MongoClient.connect(url, { useNewUrlParser: true });
+        let gdb = new MG.Graph(client, { print_out: true });
+        let query = { identity: resetIdentity };
+        let results = await gdb.get(dbName, collectionName, query);
+        if (results.length == 0) {
+          params.msg = resetIdentity + " does not exist.";
+        }
+        else {
+          if (password1 == password2) {
+            let update = { password: password1 };
+            let result = await gdb.update(dbName, collectionName, query, update);
+            // check result later.
+            sessionManager.completingResetPasswordSession(req.body.identity);
+            params.success = 1;
+            params.msg = "Password is changed Successfully.";
+          }
+          else {
+            params.msg = "The two passwords are different.";
+          }
+        }
+        client.close();
       }
       else {
-        params.msg = "The two passwords are different.";
+        params.msg = "ResetCode has not been verified.";
       }
     }
-    client.close();
+    else {
+      params.msg = "Session ID was no set.";
+    }
   }
   catch (err) {
     console.log(err.message);
@@ -292,34 +313,46 @@ app.post("/change_account_info", async(req, res) => {
   try {
     console.log("---------------------------------------------'/change_account_info' called.---------------------------------------------");
     console.log("server req = " + JSON.stringify(req.body));
-    let dbName = (req.body.__dbName__)? req.body.__dbName__ : dbNameDefault;
-    let password1 = req.body.password1;
-    let password2 = req.body.password2;
-    let firstName = req.body.firstName;
-    let lastName = req.body.lastName;
-    if (!password1 || !password2 || !firstName || !lastName) {
-      params.msg = "Fill up the blanks."
-      return;
-    }
-    let client = await MongoClient.connect(url, { useNewUrlParser: true });
-    let gdb = new MG.Graph(client, { print_out: true });
-    let query = { identity: sessionAccount.identity };
-    let results = await gdb.get(dbName, collectionName, query);
-    if (results.length == 1) {
-      if (password1 == password2) {
-        let update = { password: password1, firstName: firstName, lastName: lastName };
-        let result = await gdb.update(dbName, collectionName, query, update);
-        params.success = 1;
-        params.msg = "Informaion is changed successfully.";
+    if (req.body.identity) {
+      if (sessionManager.checkSessionLogin(req.body.identity)) {
+        let dbName = (req.body.__dbName__)? req.body.__dbName__ : dbNameDefault;
+        let password1 = req.body.password1;
+        let password2 = req.body.password2;
+        let firstName = req.body.firstName;
+        let lastName = req.body.lastName;
+        if (password1 && password2 && firstName && lastName) {
+          let client = await MongoClient.connect(url, { useNewUrlParser: true });
+          let gdb = new MG.Graph(client, { print_out: true });
+          let query = { identity: sessionAccount.identity };
+          let results = await gdb.get(dbName, collectionName, query);
+          if (results.length == 1) {
+            if (password1 == password2) {
+              let update = { password: password1, firstName: firstName, lastName: lastName };
+              let result = await gdb.update(dbName, collectionName, query, update);
+              params.success = 1;
+              params.msg = "Informaion is changed successfully.";
+            }
+            else {
+              params.msg = "The two passwords are different.";
+            }
+          }
+          else {
+            params.msg = sessionAccount.identity + " doesn't exist.";
+          }
+          client.close();
+        }
+        else {
+          params.msg = "Fill up the blanks."
+        }
       }
       else {
-        params.msg = "The two passwords are different.";
+        params.msg = "Login was not made.";
       }
     }
     else {
-      params.msg = sessionAccount.identity + " doesn't exist.";
+      params.msg = "Session ID was no set.";
     }
-    client.close();
+
   }
   catch (err) {
     console.log(err.message);
@@ -344,6 +377,7 @@ app.post("/__drop_account_db__", async(req, res) => {
       let gdb = new MG.Graph(client, { print_out: true });
       await gdb.clearDB(dbName);
       await client.close();
+      sessionManager.clearSessions();
       params.success = 1;
       params.msg = dbName + " is successfully droped.";
     }

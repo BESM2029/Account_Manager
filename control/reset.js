@@ -1,4 +1,4 @@
-function sendResetCode() {
+function forgotPassword() {
   var params = { identity: $("#reset_id").val() };
   console.log("client params = " + JSON.stringify(params));
   $.ajax({
@@ -6,7 +6,7 @@ function sendResetCode() {
     "type": "post",
     "global": false,
     "dataType": "html",
-    "url": "send_reset_code",
+    "url": "forgot_password",
     "data": params,
     "success": function(params) {
       let params_arr = JSON.parse(params)
@@ -20,7 +20,7 @@ function sendResetCode() {
 }
 
 function checkResetCode() {
-  var params = { code: $("#reset_code").val() };
+  var params = { identity: $("#reset_id").val(), code: $("#reset_code").val() };
   console.log("client params = " + JSON.stringify(params));
   $.ajax({
     "async": true,
@@ -47,7 +47,7 @@ function checkResetCode() {
 }
 
 function changePassword() {
-  var params = { password1: $("#reset_pw1").val(), password2: $("#reset_pw2").val() };
+  var params = { identity: $("#reset_id").val(), password1: $("#reset_pw1").val(), password2: $("#reset_pw2").val() };
   console.log("client params = " + JSON.stringify(params));
   $.ajax({
     "async": true,
