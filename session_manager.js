@@ -14,19 +14,25 @@ class SessionManager {
       }
       this.printSessions();
     }
-   checkSessionLogin(sessionIdentity) {
-      if (sessionIdentity && this._sessions[sessionIdentity]) {
-        return true;
+    getSessionAccountInfo(sessionIdentity) {
+      let answer = null;
+      if (sessionIdentity) {
+        answer = this._sessions[sessionIdentity];
       }
-      else {
-        return false;
-      }
+      return answer;
     }
     logoutSession(sessionIdentity) {
       if (sessionIdentity) {
         delete this._sessions[sessionIdentity];
       }
       this.printSessions();
+    }
+    checkSessionLogin(sessionIdentity) {
+      let answer = false;
+      if (sessionIdentity && this._sessions[sessionIdentity]) {
+        answer = true;
+      }
+      return answer;
     }
     resettingPasswordSession(sessionIdentity, resetCode) {
       if (sessionIdentity && resetCode) {
@@ -70,14 +76,6 @@ class SessionManager {
     }
     timeoutSession(sessionIdentity) {
       this.logoutSession(sessionIdentity);
-    }
-    getSessionAccountInfo(sessionIdentity) {
-      if (sessionIdentity) {
-        return this._sessions[sessionIdentity];
-      }
-      else {
-        return null;
-      }
     }
     printSessions() {
       console.log(JSON.stringify(this._sessions));

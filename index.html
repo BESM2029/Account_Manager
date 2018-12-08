@@ -8,10 +8,10 @@
   <body>
     <script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
     <script src="http://code.jquery.com/mobile/1.4.3/jquery.mobile-1.4.3.min.js"></script>
-    <script src="control/main.js"></script>
-    <script src="control/create.js"></script>
-    <script src="control/reset.js"></script>
-    <script src="control/session.js"></script>
+    <script src="control/c_main.js"></script>
+    <script src="control/c_create.js"></script>
+    <script src="control/c_reset.js"></script>
+    <script src="control/c_session.js"></script>
     <script>
       let noloading_pages = 6;
       let nopages_loaded = 0;
@@ -28,12 +28,12 @@
           } 
         });
         console.log("loading pagecontainers...");
-        $.mobile.pageContainer.pagecontainer("load", "view/main.html");
-        $.mobile.pageContainer.pagecontainer("load", "view/create.html");
-        $.mobile.pageContainer.pagecontainer("load", "view/reset_phase_1.html");
-        $.mobile.pageContainer.pagecontainer("load", "view/reset_phase_2.html");
-        $.mobile.pageContainer.pagecontainer("load", "view/session_main.html"); 
-        $.mobile.pageContainer.pagecontainer("load", "view/session_account_edit.html");
+        $.mobile.pageContainer.pagecontainer("load", "view/v_main.html");
+        $.mobile.pageContainer.pagecontainer("load", "view/v_create.html");
+        $.mobile.pageContainer.pagecontainer("load", "view/v_reset_phase_1.html");
+        $.mobile.pageContainer.pagecontainer("load", "view/v_reset_phase_2.html");
+        $.mobile.pageContainer.pagecontainer("load", "view/v_session_main.html"); 
+        $.mobile.pageContainer.pagecontainer("load", "view/v_session_account_edit.html");
         console.log("pagecontainer-load done!");
       });
     </script>

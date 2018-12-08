@@ -1,5 +1,5 @@
 function createAccount() {
-  var params = { identity: $("#create_id").val(), password1: $("#create_pw1").val(), password2: $("#create_pw2").val(),
+  let params = { identity: $("#create_id").val(), password1: $("#create_pw1").val(), password2: $("#create_pw2").val(),
     firstName: $("#create_first_name").val(), lastName: $("#create_last_name").val() };
   console.log("client params = "+JSON.stringify(params));
   $.ajax({

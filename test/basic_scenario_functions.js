@@ -1,10 +1,10 @@
 const axios = require("axios");
 
-function dropDB(dbName) {
+function dropDB(accountData) {
   return axios({
     method: "post",
     url: "http://localhost:8103/__drop_account_db__",
-    data: { __dbName__: dbName },
+    data: accountData,
     headers: {}
   })
   .then(res => res.data)
@@ -33,10 +33,11 @@ function loginAccount(accountData) {
   .catch(error => console.log(error));
 }
 
-function getAccountInfo() {
+function getAccountInfo(accountData) {
   return axios({
     method: "post",
     url: "http://localhost:8103/get_account_info",
+    data: accountData,
     headers: {}
   })
   .then(res => res.data)
@@ -54,10 +55,11 @@ function changeAccountInfo(accountData) {
   .catch(error => console.log(error));
 }
 
-function logoutAccount() {
+function logoutAccount(accountData) {
   return axios({
     method: "post",
     url: "http://localhost:8103/logout_account",
+    data: accountData,
     headers: {}
   })
   .then(res => res.data)

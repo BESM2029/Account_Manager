@@ -1,5 +1,5 @@
 function loginAccount() {
-  var params = { identity: $("#main_id").val(), password: $("#main_pw").val() };
+  let params = { identity: $("#main_id").val(), password: $("#main_pw").val() };
   console.log("client params = " + JSON.stringify(params));
   $.ajax({
     "async": true,
@@ -13,9 +13,9 @@ function loginAccount() {
       if (params_arr.success == 1) {
         $.mobile.changePage("#page_session_main", { transition: "none" });
         $(".notice").html(params_arr.msg);
-        sessionStorage.setItem('sessionID', $("#main_id").val());
-        var ID = sessionStorage.getItem('sessionID');
-        console.log(ID);
+        sessionStorage.setItem('sessionId', $("#main_id").val());
+        let id = sessionStorage.getItem('sessionId');
+        console.log(id);
       }
       else {
         $(".notice").html(params_arr.msg);

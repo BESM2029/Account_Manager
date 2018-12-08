@@ -2,9 +2,9 @@
   "name": "account_manager",
   "version": "1.0.0",
   "description": "",
-  "main": "account_DB_server.js",
+  "main": "multi_account_DB_server.js",
   "scripts": {
-    "test": "mocha --timeout 10000|| true "
+    "test": "mocha --timeout 10000 || true "
   },
   "repository": {
     "type": "git",

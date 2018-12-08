@@ -1,5 +1,5 @@
 function forgotPassword() {
-  var params = { identity: $("#reset_id").val() };
+  let params = { identity: $("#reset_id").val() };
   console.log("client params = " + JSON.stringify(params));
   $.ajax({
     "async": true,
@@ -20,7 +20,7 @@ function forgotPassword() {
 }
 
 function checkResetCode() {
-  var params = { identity: $("#reset_id").val(), code: $("#reset_code").val() };
+  let params = { identity: $("#reset_id").val(), code: $("#reset_code").val() };
   console.log("client params = " + JSON.stringify(params));
   $.ajax({
     "async": true,
@@ -47,7 +47,7 @@ function checkResetCode() {
 }
 
 function changePassword() {
-  var params = { identity: $("#reset_id").val(), password1: $("#reset_pw1").val(), password2: $("#reset_pw2").val() };
+  let params = { identity: $("#reset_id").val(), password1: $("#reset_pw1").val(), password2: $("#reset_pw2").val() };
   console.log("client params = " + JSON.stringify(params));
   $.ajax({
     "async": true,
